@@ -47,7 +47,8 @@ def main():
     # Create a sidebar for previous inputs
     st.sidebar.header("Previous Topics")
     if st.session_state.previous_inputs:
-        st.sidebar.write(st.session_state.previous_inputs)
+        for i, topic in enumerate(st.session_state.previous_inputs):
+            st.sidebar.write(f"{i + 1}. {topic}")
     else:
         st.sidebar.write("No previous topics in this session yet.")
 
@@ -62,11 +63,14 @@ def main():
             # Add input to session state
             st.session_state.previous_inputs.append(topic)
 
+            # Display the topic immediately in the sidebar
+            st.sidebar.write(f"{len(st.session_state.previous_inputs)}. {topic}")
+
             st.info(f"Generating content for **{topic}**... This may take a moment.")
             with st.spinner('Processing... Please wait...'):
                 result = asyncio.run(process_topic(topic))
             st.success("Done! Here's the result:")
-            st.write(result)
+            st.markdown(result)
         else:
             st.warning("Please enter a topic before submitting.")
 
