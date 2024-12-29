@@ -3,10 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.tools import YouTubeSearchTool
-from tools import tool,tool2
-
-yt_tool = YouTubeSearchTool()
+from tools import tool,tool2,yt_tool
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-1.5-flash",
@@ -23,7 +20,8 @@ youtube_researcher = Agent(
     backstory=(
         "With a strong background in digital media and content analysis, this YouTube Researcher began their career as a video content creator, mastering the art of visual storytelling and audience engagement. Fascinated by the power of video as a learning tool, they transitioned into research, dedicating themselves to uncovering the most valuable and relevant YouTube content for various topics. Their expertise in identifying credible sources, understanding viewer trends, and extracting key insights makes them an invaluable asset for anyone looking to leverage YouTube as a rich resource of knowledge and inspiration."
     ),
-    tools=[tool2,yt_tool],
+    tools=[yt_tool],
+    max_iter=3,
     llm=llm,
     allow_delegation=True,
 )
@@ -49,7 +47,7 @@ writer = Agent(
     backstory=(
         "With a background in computer science and a flair for storytelling, this Technical Content Writer has spent over a decade bridging the gap between technology and its users. Initially starting as a software developer, they discovered a talent for explaining intricate technical details in an accessible manner. Over the years, they transitioned into content writing, working with top tech companies to produce manuals, articles, and guides that demystify complex topics. Their unique combination of hands-on technical experience and writing prowess makes them a go-to expert for translating sophisticated tech jargon into clear, user-friendly content."
     ),
-    tools=[tool,tool2],
+    tools=[tool,yt_tool],
     llm=llm,
     allow_delegation= False,
 )

@@ -1,3 +1,4 @@
+from langchain_google_genai import ChatGoogleGenerativeAI
 import streamlit as st
 import asyncio
 import time
@@ -7,8 +8,11 @@ from tasks import youtube_research_task, research_task, writing_task
 from io import BytesIO
 from markdown import markdown
 from weasyprint import HTML
+from crewai_tools import FileReadTool
+from easyocr import Reader
 
 st.set_page_config(page_title="Research & Writing Tool", page_icon="", layout="centered")
+
 
 async def import_modules():
     global Crew, Process, youtube_researcher, blog_researcher, writer, research_task, writing_task, youtube_research_task
@@ -16,25 +20,28 @@ async def import_modules():
     Crew = importlib.import_module('crewai').Crew
     Process = importlib.import_module('crewai').Process
 
-def run_crew_task(topic, selected_agents, selected_tasks):
+def run_crew_task(topic, selected_agents, selected_tasks, extracted_text):
     crew = Crew(
         agents=selected_agents,
         tasks=selected_tasks,
         process=Process.sequential,
+        knowledge_sources=extracted_text,
+        # planning=True,
+        # planning_llm=llm
     )
     result = crew.kickoff(inputs={'topic': topic})
     return result
 
-async def process_topic(topic, selected_agents, selected_tasks):
+async def process_topic(topic, selected_agents, selected_tasks, extracted_text):
     await import_modules()
     loop = asyncio.get_running_loop()
     with ThreadPoolExecutor() as pool:
-        result = await loop.run_in_executor(pool, run_crew_task, topic, selected_agents, selected_tasks)
+        result = await loop.run_in_executor(pool, run_crew_task, topic, selected_agents, selected_tasks, extracted_text)
     return result
 
 def typewriter_effect(text, speed=0.002):
     if not isinstance(text, str):
-        text = str(text)  
+        text = str(text)
     container = st.empty()
     displayed_text = ""
     for char in text:
@@ -46,7 +53,6 @@ def typewriter_effect(text, speed=0.002):
 
 def generate_pdf(markdown_text):
     html_content = markdown(markdown_text)
-    
     pdf_buffer = BytesIO()
     HTML(string=html_content).write_pdf(pdf_buffer)
     pdf_buffer.seek(0)
@@ -104,6 +110,20 @@ def main():
     else:
         st.sidebar.write("No previous topics in this session yet.")
 
+    uploaded_file = st.file_uploader("Upload a document to extract text (optional):")
+    extracted_text = ""
+
+    if uploaded_file is not None:
+        file_path = f"/tmp/{uploaded_file.name}"
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        
+        reader = Reader(['en']) 
+        extracted_text = reader.readtext(file_path, detail=0, paragraph=True)
+        extracted_text = "\n".join(extracted_text)
+        
+        st.text_area("Extracted Text", value=extracted_text, height=200)
+
     with st.form(key="topic_form", clear_on_submit=True):
         st.markdown("### Enter a topic to research and write about:")
         topic = st.text_input("Topic:", key="input_topic")
@@ -116,7 +136,7 @@ def main():
 
             st.info(f"Generating content for **{topic}**... This may take a moment.")
             with st.spinner('Processing... Please wait...'):
-                result = asyncio.run(process_topic(topic, all_agents, selected_task_objects))
+                result = asyncio.run(process_topic(topic, all_agents, selected_task_objects, extracted_text))
 
             result_text = result.raw or "No output available"
             st.success("Done! Here's the result:")

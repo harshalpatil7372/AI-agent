@@ -1,9 +1,14 @@
 from crewai_tools import SerperDevTool,YoutubeVideoSearchTool
+from langchain_community.tools import YouTubeSearchTool
 from dotenv import load_dotenv
 load_dotenv()
 import os
 
 os.environ['SERPER_API_KEY']=os.getenv('SERPER_API_KEY')
+
+yt_tool = YouTubeSearchTool()
+
+tool = SerperDevTool()
 
 tool2 = YoutubeVideoSearchTool(
     config=dict(
@@ -26,5 +31,3 @@ tool2 = YoutubeVideoSearchTool(
         ),
     )
 )
-
-tool = SerperDevTool()
